@@ -1,43 +1,43 @@
-# Claude Code — Statusline personalizada
+# Claude Code — Custom Statusline
 
-Una barra de estado compacta para Claude Code con 5 campos y referencias visuales:
+A compact statusline for Claude Code with 5 fields and visual references:
 
 ```
 branch main  │  model Opus 4.6  │  effort max  │  ctx ████░░░░░░ 42%  │  sess █░░░░░░░░░ 18%
 ```
 
-## Qué muestra
+## What it shows
 
-| Campo    | Color    | Fuente                                    |
-|----------|----------|-------------------------------------------|
-| `branch` | azul     | rama git actual del workspace             |
-| `model`  | naranja  | `model.display_name` del JSON del stdin   |
-| `effort` | violeta  | último `/effort` de la sesión (transcripción) o `effortLevel` de `settings.json` |
-| `ctx`    | bar+%    | `context_window.used_percentage`          |
-| `sess`   | bar+%    | `rate_limits.five_hour.used_percentage`   |
+| Field    | Color   | Source                                                                         |
+|----------|---------|--------------------------------------------------------------------------------|
+| `branch` | blue    | current git branch of the workspace                                            |
+| `model`  | orange  | `model.display_name` from stdin JSON                                           |
+| `effort` | purple  | last `/effort` of the session (transcript) or `effortLevel` from `settings.json` |
+| `ctx`    | bar+%   | `context_window.used_percentage`                                               |
+| `sess`   | bar+%   | `rate_limits.five_hour.used_percentage`                                        |
 
-Las barras son de 10 celdas (`█` llenas / `░` vacías) y cambian de color por umbral:
-- **verde** si `<70%`
-- **amarillo** si `70–89%`
-- **rojo** si `≥90%`
+Bars are 10 cells wide (`█` filled / `░` empty) and change color by threshold:
+- **green** if `<70%`
+- **yellow** if `70–89%`
+- **red** if `≥90%`
 
-Los labels (`branch`, `model`, `effort`, `ctx`, `sess`) aparecen en gris atenuado para servir de referencia visual sin competir con los valores.
+Labels (`branch`, `model`, `effort`, `ctx`, `sess`) are rendered in dim grey so they serve as visual references without competing with the values.
 
-## Dependencias
+## Dependencies
 
-- **`bash`** — nativo en macOS/Linux. En Windows viene con [Git for Windows](https://git-scm.com/download/win) (Git Bash).
-- **`jq`** — parser JSON de línea de comandos. Es lo único que puede faltar:
+- **`bash`** — native on macOS/Linux. On Windows it ships with [Git for Windows](https://git-scm.com/download/win) (Git Bash).
+- **`jq`** — command-line JSON parser. The only thing likely to be missing:
   - macOS: `brew install jq`
   - Ubuntu/Debian: `sudo apt install jq`
-  - Windows: `winget install jqlang.jq` *(o `choco install jq`)*
-- **`git`** — ya instalado si usás Claude Code.
-- **Terminal con UTF-8 + ANSI 256-color** — Windows Terminal, iTerm2, gnome-terminal, mintty. Todos los modernos.
+  - Windows: `winget install jqlang.jq` *(or `choco install jq`)*
+- **`git`** — already installed if you are using Claude Code.
+- **Terminal with UTF-8 + ANSI 256-color** — Windows Terminal, iTerm2, gnome-terminal, mintty. Any modern terminal works.
 
-## Instalación
+## Installation
 
-### 1. Copiar el script
+### 1. Copy the script
 
-Copiar `statusline-command.sh` a `~/.claude/statusline-command.sh`:
+Copy `statusline-command.sh` to `~/.claude/statusline-command.sh`:
 
 **macOS / Linux:**
 ```bash
@@ -49,11 +49,11 @@ chmod +x ~/.claude/statusline-command.sh
 ```bash
 cp statusline-command.sh ~/.claude/statusline-command.sh
 ```
-*(En Windows no hace falta `chmod` porque el script se invoca con `bash` explícitamente.)*
+*(On Windows you don't need `chmod` because the script is invoked via `bash` explicitly.)*
 
-### 2. Configurar `settings.json`
+### 2. Configure `settings.json`
 
-Editar `~/.claude/settings.json` (o crearlo si no existe) y agregar el bloque `statusLine`. El valor de `command` cambia según el SO:
+Edit `~/.claude/settings.json` (or create it if it doesn't exist) and add the `statusLine` block. The `command` value changes depending on the OS:
 
 **macOS / Linux:**
 ```json
@@ -75,9 +75,9 @@ Editar `~/.claude/settings.json` (o crearlo si no existe) y agregar el bloque `s
 }
 ```
 
-Reemplazá `<USERNAME>` por tu usuario real. La ruta `/c/Users/...` es el formato MSYS/Git Bash para `C:\Users\...` — Claude Code invoca el comando vía Git Bash y `~` a veces no se expande bien en ese contexto.
+Replace `<USERNAME>` with your actual user. The `/c/Users/...` path is the MSYS/Git Bash format for `C:\Users\...` — Claude Code invokes the command via Git Bash and `~` sometimes doesn't expand correctly in that context.
 
-**Si `settings.json` ya existe** con otros campos (`model`, `effortLevel`, etc.), solo agregá el bloque `statusLine` manteniendo el resto:
+**If `settings.json` already exists** with other fields (`model`, `effortLevel`, etc.), just add the `statusLine` block while keeping the rest:
 
 ```json
 {
@@ -90,13 +90,13 @@ Reemplazá `<USERNAME>` por tu usuario real. La ruta `/c/Users/...` es el format
 }
 ```
 
-### 3. Reiniciar Claude Code
+### 3. Restart Claude Code
 
-La statusline se refresca tras cada respuesta del asistente. Al reiniciar Claude Code ya debería verse.
+The statusline refreshes after every assistant response. Once you restart Claude Code it should already be visible.
 
-## Probarlo antes de confiar
+## Try it before trusting it
 
-Para verificar que `jq`, `git` y el script funcionan sin errores, simulá el JSON que Claude Code envía por stdin:
+To verify that `jq`, `git` and the script work without errors, simulate the JSON that Claude Code sends over stdin:
 
 ```bash
 echo '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Opus 4.6"},"context_window":{"used_percentage":42},"rate_limits":{"five_hour":{"used_percentage":18}}}' \
@@ -104,39 +104,39 @@ echo '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Opus 4.6"
 echo
 ```
 
-Salida esperada (con colores reales en terminal):
+Expected output (with real colors in a terminal):
 ```
 branch main  │  model Opus 4.6  │  effort medium  │  ctx ████░░░░░░ 42%  │  sess █░░░░░░░░░ 18%
 ```
 
-Si ves códigos crudos tipo `\033[38;5;39m`, el terminal no interpreta ANSI (improbable en 2026, pero posible en `cmd.exe` clásico).
+If you see raw codes like `\033[38;5;39m`, the terminal isn't interpreting ANSI (unlikely in 2026, but possible in legacy `cmd.exe`).
 
-## Sobre el campo `effort`
+## About the `effort` field
 
-Claude Code **no expone** el nivel de esfuerzo en el JSON que recibe el statusline, y el comando `/effort max` aplica "this session only" sin escribir a `settings.json`. Para reflejar el valor real el script usa esta cadena de resolución:
+Claude Code **does not expose** the effort level in the JSON the statusline receives, and the `/effort max` command applies "this session only" without writing to `settings.json`. To reflect the real value the script uses this resolution chain:
 
-1. **Transcripción de la sesión.** El JSON de stdin incluye `transcript_path`. El script busca en ese archivo el último mensaje de usuario con `<command-name>/effort</command-name>` y extrae su `<command-args>`. Así captura tanto `/effort max` (session-only) como `/effort high|low|medium` (persistente).
-2. **`settings.json` (`effortLevel`).** Si no hay ningún `/effort` en la transcripción (sesión recién abierta), cae a este valor.
-3. **`"medium"`.** Default si ninguno de los dos anteriores aplica.
+1. **Session transcript.** The stdin JSON includes `transcript_path`. The script searches that file for the last user message containing `<command-name>/effort</command-name>` and extracts its `<command-args>`. This captures both `/effort max` (session-only) and `/effort high|low|medium` (persistent).
+2. **`settings.json` (`effortLevel`).** If no `/effort` is found in the transcript (freshly opened session), it falls back to this value.
+3. **`"medium"`.** Default if neither of the above applies.
 
-El grep usa el prefijo exacto `"content":"<command-name>/effort</command-name>` para matchear solo mensajes reales del usuario, descartando `tool_results` que pudieran contener referencias históricas al mismo texto (importante si el propio script termina grepeando el transcript en un turno anterior).
+The grep uses the exact prefix `"content":"<command-name>/effort</command-name>` to match only real user messages, discarding `tool_results` that might contain historical references to the same text (important if the script itself ends up grepping the transcript on a previous turn).
 
-**Costo:** un `grep -F` sobre un jsonl de ~1 MB corre en pocos ms, despreciable frente al costo de las llamadas a `jq`.
+**Cost:** a `grep -F` over a ~1 MB jsonl runs in a few ms, negligible compared to the cost of the `jq` calls.
 
 ## Troubleshooting
 
-| Síntoma | Causa | Solución |
+| Symptom | Cause | Fix |
 |---|---|---|
-| Statusline vacía | `jq` no instalado | Instalá `jq` con el gestor del SO |
-| `statusline skipped · restart to fix` | Workspace no confiado | Reiniciá Claude Code y aceptá el diálogo de confianza |
-| Muestra `branch -` | El cwd no es un repo git | Normal fuera de repos; no es un error |
-| `sess` siempre en 0% | No sos suscriptor Claude.ai Pro/Max, o es el primer turno antes del primer API call | `rate_limits` solo aparece para suscriptores tras la primera respuesta |
-| Códigos ANSI crudos visibles | Terminal no interpreta escape sequences | Usar un terminal moderno (Windows Terminal, iTerm2, etc.) |
-| `effort` siempre `medium` | Sesión recién abierta sin `/effort` previo Y `effortLevel` ausente en `settings.json` | Ejecutar cualquier `/effort <valor>` en la sesión o agregar `"effortLevel": "..."` a `settings.json` |
+| Empty statusline | `jq` not installed | Install `jq` with your OS package manager |
+| `statusline skipped · restart to fix` | Workspace not trusted | Restart Claude Code and accept the trust dialog |
+| Shows `branch -` | The cwd is not a git repo | Normal outside of repos; not an error |
+| `sess` always at 0% | Not a Claude.ai Pro/Max subscriber, or it's the first turn before the first API call | `rate_limits` only appears for subscribers after the first response |
+| Raw ANSI codes visible | Terminal isn't interpreting escape sequences | Use a modern terminal (Windows Terminal, iTerm2, etc.) |
+| `effort` always `medium` | Freshly opened session with no prior `/effort` AND `effortLevel` missing from `settings.json` | Run any `/effort <value>` in the session or add `"effortLevel": "..."` to `settings.json` |
 
-## Personalización
+## Customization
 
-Los códigos de color están definidos al inicio del script. Para cambiarlos, editá estas líneas:
+Color codes are defined at the top of the script. To change them, edit these lines:
 
 ```bash
 BR='\033[38;5;39m'   # blue   — branch
@@ -144,16 +144,16 @@ MD='\033[38;5;208m'  # orange — model
 EF='\033[38;5;135m'  # purple — effort
 ```
 
-Los códigos `\033[38;5;N m` son 256-color (N = 0-255). Tabla de referencia: [256 color cheatsheet](https://www.ditig.com/256-colors-cheat-sheet).
+The `\033[38;5;N m` codes are 256-color (N = 0-255). Reference table: [256 color cheatsheet](https://www.ditig.com/256-colors-cheat-sheet).
 
-Para cambiar el ancho de las barras, modificá `width=10` dentro de `build_bar()`.
+To change the bar width, modify `width=10` inside `build_bar()`.
 
-Para cambiar los umbrales verde/amarillo/rojo, editá los `-ge 90` / `-ge 70` en la sección "Color según umbral".
+To change the green/yellow/red thresholds, edit the `-ge 90` / `-ge 70` checks in the "Color según umbral" section.
 
-## Archivos en este directorio
+## Files in this directory
 
 ```
 statusbar/
-├── README.md               ← este archivo
-└── statusline-command.sh   ← el script a copiar a ~/.claude/
+├── README.md               ← this file
+└── statusline-command.sh   ← the script to copy to ~/.claude/
 ```
