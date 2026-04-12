@@ -4,9 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A single-file bash statusline script (`statusline-command.sh`) that users copy to `~/.claude/statusline-command.sh` and wire up via `~/.claude/settings.json`. There is no build, no dependency install, no test suite — editing the script and verifying output is the entire development loop.
+A single-file bash statusline script (`bin/statusline-command.sh`) that users copy to `~/.claude/statusline-command.sh` and wire up via `~/.claude/settings.json`. There is no build, no dependency install, no test suite — editing the script and verifying output is the entire development loop.
 
-`statusline.md` is a local copy of the upstream Claude Code docs page on statuslines — use it as reference for the stdin JSON contract, not as something to edit.
+`docs/statusline.md` is a local copy of the upstream Claude Code docs page on statuslines — use it as reference for the stdin JSON contract, not as something to edit. `docs/img.jpg` is the preview screenshot embedded in the README.
+
+Repo layout:
+
+```
+bin/statusline-command.sh   ← the script
+docs/statusline.md          ← upstream reference (read-only)
+docs/img.jpg                ← preview screenshot rendered in README
+```
 
 ## Testing changes
 
@@ -14,7 +22,7 @@ Simulate the stdin JSON Claude Code sends and pipe it through the script:
 
 ```bash
 echo '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Opus 4.6"},"context_window":{"used_percentage":42},"rate_limits":{"five_hour":{"used_percentage":18,"resets_at":'"$(($(date +%s)+3600))"'}}}' \
-  | bash statusline-command.sh
+  | bash bin/statusline-command.sh
 echo
 ```
 

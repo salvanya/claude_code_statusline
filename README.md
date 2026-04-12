@@ -2,19 +2,21 @@
 
 A compact statusline for Claude Code with 5 fields and visual references:
 
+![Statusline preview](docs/img.jpg)
+
 ```
-branch main  │  model Opus 4.6  │  effort max  │  ctx ████░░░░░░ 42%  │  sess █░░░░░░░░░ 18%
+branch main  │  model Opus 4.6  │  effort max  │  ctx ████░░░░░░ 42%  │  sess █░░░░░░░░░ 18% (4h12m)
 ```
 
 ## What it shows
 
-| Field    | Color   | Source                                                                         |
-|----------|---------|--------------------------------------------------------------------------------|
-| `branch` | blue    | current git branch of the workspace                                            |
-| `model`  | orange  | `model.display_name` from stdin JSON                                           |
-| `effort` | purple  | last `/effort` of the session (transcript) or `effortLevel` from `settings.json` |
-| `ctx`    | bar+%   | `context_window.used_percentage`                                               |
-| `sess`   | bar+%   | `rate_limits.five_hour.used_percentage`                                        |
+| Field    | Color   | Source                                                                             |
+|----------|---------|------------------------------------------------------------------------------------|
+| `branch` | blue    | current git branch of the workspace                                                |
+| `model`  | orange  | `model.display_name` from stdin JSON                                               |
+| `effort` | purple  | last `/effort` of the session (transcript) or `effortLevel` from `settings.json`   |
+| `ctx`    | bar+%   | `context_window.used_percentage`                                                   |
+| `sess`   | bar+%+time | `rate_limits.five_hour.used_percentage`, followed by time left until the 5h window resets (`rate_limits.five_hour.resets_at`), formatted as `HhMMm` in dim grey — shows `--` if the reset timestamp is missing |
 
 Bars are 10 cells wide (`█` filled / `░` empty) and change color by threshold:
 - **green** if `<70%`
@@ -37,17 +39,17 @@ Labels (`branch`, `model`, `effort`, `ctx`, `sess`) are rendered in dim grey so 
 
 ### 1. Copy the script
 
-Copy `statusline-command.sh` to `~/.claude/statusline-command.sh`:
+Copy `bin/statusline-command.sh` to `~/.claude/statusline-command.sh`:
 
 **macOS / Linux:**
 ```bash
-cp statusline-command.sh ~/.claude/statusline-command.sh
+cp bin/statusline-command.sh ~/.claude/statusline-command.sh
 chmod +x ~/.claude/statusline-command.sh
 ```
 
 **Windows (Git Bash):**
 ```bash
-cp statusline-command.sh ~/.claude/statusline-command.sh
+cp bin/statusline-command.sh ~/.claude/statusline-command.sh
 ```
 *(On Windows you don't need `chmod` because the script is invoked via `bash` explicitly.)*
 
@@ -106,8 +108,10 @@ echo
 
 Expected output (with real colors in a terminal):
 ```
-branch main  │  model Opus 4.6  │  effort medium  │  ctx ████░░░░░░ 42%  │  sess █░░░░░░░░░ 18%
+branch main  │  model Opus 4.6  │  effort medium  │  ctx ████░░░░░░ 42%  │  sess █░░░░░░░░░ 18% (--)
 ```
+
+The trailing `(--)` is the time remaining until the 5h session window resets. It shows `--` here because the test JSON doesn't include `rate_limits.five_hour.resets_at`; in a real session you'll see something like `(4h12m)`.
 
 If you see raw codes like `\033[38;5;39m`, the terminal isn't interpreting ANSI (unlikely in 2026, but possible in legacy `cmd.exe`).
 
@@ -154,6 +158,11 @@ To change the green/yellow/red thresholds, edit the `-ge 90` / `-ge 70` checks i
 
 ```
 statusbar/
-├── README.md               ← this file
-└── statusline-command.sh   ← the script to copy to ~/.claude/
+├── README.md                   ← this file
+├── CLAUDE.md                   ← guidance for Claude Code contributors
+├── bin/
+│   └── statusline-command.sh   ← the script to copy to ~/.claude/
+└── docs/
+    ├── img.jpg                 ← preview screenshot used in this README
+    └── statusline.md           ← upstream statusline reference (read-only)
 ```
