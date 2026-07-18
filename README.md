@@ -2,7 +2,7 @@
 
 A compact statusline for Claude Code with 5 fields and visual references:
 
-![Statusline preview](docs/img.jpg)
+![Statusline preview](docs/img.png)
 
 ```
 branch main  │  model Opus 4.6  │  effort max  │  ctx ████░░░░░░ 42%  │  sess █░░░░░░░░░ 18% (4h12m)
