@@ -1,11 +1,11 @@
 # Claude Code — Custom Statusline
 
-A compact statusline for Claude Code with 5 fields and visual references:
+A compact statusline for Claude Code with visual references:
 
 ![Statusline preview](docs/img.png)
 
 ```
-branch main  │  model Opus 4.6  │  effort max  │  ctx ████░░░░░░ 42%  │  sess █░░░░░░░░░ 18% (4h12m)
+branch main  │  model Opus 5.5  │  effort high  │  ctx ████░░░░░░ 42%  │  sess █░░░░░░░░░ 18% (1h01m)  │  week ████░░░░░░ 41% (3d04h)
 ```
 
 ## What it shows
@@ -13,17 +13,18 @@ branch main  │  model Opus 4.6  │  effort max  │  ctx ████░░�
 | Field    | Color   | Source                                                                             |
 |----------|---------|------------------------------------------------------------------------------------|
 | `branch` | blue    | current git branch of the workspace                                                |
-| `model`  | orange  | `model.display_name` from stdin JSON                                               |
-| `effort` | purple  | last `/effort` of the session (transcript) or `effortLevel` from `settings.json`   |
-| `ctx`    | bar+%   | `context_window.used_percentage`                                                   |
-| `sess`   | bar+%+time | `rate_limits.five_hour.used_percentage`, followed by time left until the 5h window resets (`rate_limits.five_hour.resets_at`), formatted as `HhMMm` in dim grey — shows `--` if the reset timestamp is missing |
+| `model`  | orange  | `model.display_name` from stdin JSON, followed by a yellow `fast` tag when `fast_mode` is on |
+| `effort` | purple  | `effort.level` from stdin JSON (live value, including mid-session `/effort` changes); `-` when the model doesn't support effort |
+| `ctx`    | bar+%   | `context_window.used_percentage`; `--` while Claude Code hasn't reported it yet     |
+| `sess`   | bar+%+time | `rate_limits.five_hour.used_percentage`, followed by time left until the 5h window resets (`rate_limits.five_hour.resets_at`), formatted as `HhMMm` in dim grey — shows `--` when the data is missing |
+| `week`   | bar+%+time | `rate_limits.seven_day.*`, same format (`XdYYh` when more than a day remains). Only shown when Claude Code sends it |
 
 Bars are 10 cells wide (`█` filled / `░` empty) and change color by threshold:
 - **green** if `<70%`
 - **yellow** if `70–89%`
 - **red** if `≥90%`
 
-Labels (`branch`, `model`, `effort`, `ctx`, `sess`) are rendered in dim grey so they serve as visual references without competing with the values.
+Labels (`branch`, `model`, `effort`, `ctx`, `sess`, `week`) are rendered in dim grey so they serve as visual references without competing with the values.
 
 ## Dependencies
 
@@ -31,7 +32,9 @@ Labels (`branch`, `model`, `effort`, `ctx`, `sess`) are rendered in dim grey so 
 - **`jq`** — command-line JSON parser. The only thing likely to be missing:
   - macOS: `brew install jq`
   - Ubuntu/Debian: `sudo apt install jq`
-  - Windows: `winget install jqlang.jq` *(or `choco install jq`)*
+  - Windows: `winget install jqlang.jq` *(or `choco install jq`)*, then restart Claude Code so it picks up the new `PATH`. Check with `jq --version` from Git Bash. If `jq` came bundled with another tool (Anaconda, for example), uninstalling that tool removes it too.
+
+  If `jq` is missing, the statusline shows `statusline: falta jq (...)` instead of the fields.
 - **`git`** — already installed if you are using Claude Code.
 - **Terminal with UTF-8 + ANSI 256-color** — Windows Terminal, iTerm2, gnome-terminal, mintty. Any modern terminal works.
 
@@ -62,17 +65,21 @@ Edit `~/.claude/settings.json` (or create it if it doesn't exist) and add the `s
 {
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline-command.sh"
+    "command": "~/.claude/statusline-command.sh",
+    "refreshInterval": 60
   }
 }
 ```
+
+`refreshInterval` (seconds) re-runs the script on a timer. Without it, the statusline only refreshes on session events, so the reset countdowns freeze while the session is idle.
 
 **Windows (Git Bash):**
 ```json
 {
   "statusLine": {
     "type": "command",
-    "command": "bash /c/Users/<USERNAME>/.claude/statusline-command.sh"
+    "command": "bash /c/Users/<USERNAME>/.claude/statusline-command.sh",
+    "refreshInterval": 60
   }
 }
 ```
@@ -87,7 +94,8 @@ Replace `<USERNAME>` with your actual user. The `/c/Users/...` path is the MSYS/
   "effortLevel": "medium",
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline-command.sh"
+    "command": "~/.claude/statusline-command.sh",
+    "refreshInterval": 60
   }
 }
 ```
@@ -101,14 +109,14 @@ The statusline refreshes after every assistant response. Once you restart Claude
 To verify that `jq`, `git` and the script work without errors, simulate the JSON that Claude Code sends over stdin:
 
 ```bash
-echo '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Opus 4.6"},"context_window":{"used_percentage":42},"rate_limits":{"five_hour":{"used_percentage":18}}}' \
+echo '{"workspace":{"current_dir":"'"$PWD"'"},"model":{"display_name":"Opus 5.5"},"effort":{"level":"high"},"context_window":{"used_percentage":42},"rate_limits":{"five_hour":{"used_percentage":18}}}' \
   | bash ~/.claude/statusline-command.sh
 echo
 ```
 
 Expected output (with real colors in a terminal):
 ```
-branch main  │  model Opus 4.6  │  effort medium  │  ctx ████░░░░░░ 42%  │  sess █░░░░░░░░░ 18% (--)
+branch main  │  model Opus 5.5  │  effort high  │  ctx ████░░░░░░ 42%  │  sess █░░░░░░░░░ 18% (--)
 ```
 
 The trailing `(--)` is the time remaining until the 5h session window resets. It shows `--` here because the test JSON doesn't include `rate_limits.five_hour.resets_at`; in a real session you'll see something like `(4h12m)`.
@@ -117,26 +125,21 @@ If you see raw codes like `\033[38;5;39m`, the terminal isn't interpreting ANSI 
 
 ## About the `effort` field
 
-Claude Code **does not expose** the effort level in the JSON the statusline receives, and the `/effort max` command applies "this session only" without writing to `settings.json`. To reflect the real value the script uses this resolution chain:
+Claude Code sends the live reasoning effort in the stdin JSON as `effort.level` (`low`, `medium`, `high`, `xhigh` or `max`). It covers `/effort` changes mid-session, session-only values such as `/effort max`, and per-model defaults from `modelSettings`. The script displays it as-is.
 
-1. **Session transcript.** The stdin JSON includes `transcript_path`. The script searches that file for the last user message containing `<command-name>/effort</command-name>` and extracts its `<command-args>`. This captures both `/effort max` (session-only) and `/effort high|low|medium` (persistent).
-2. **`settings.json` (`effortLevel`).** If no `/effort` is found in the transcript (freshly opened session), it falls back to this value.
-3. **`"medium"`.** Default if neither of the above applies.
-
-The grep uses the exact prefix `"content":"<command-name>/effort</command-name>` to match only real user messages, discarding `tool_results` that might contain historical references to the same text (important if the script itself ends up grepping the transcript on a previous turn).
-
-**Cost:** a `grep -F` over a ~1 MB jsonl runs in a few ms, negligible compared to the cost of the `jq` calls.
+The field is absent when the current model doesn't support the effort parameter; the statusline then shows `effort -`. Earlier versions of this script grepped the session transcript and fell back to `effortLevel` in `settings.json` (or `medium`), because Claude Code didn't expose the value back then. That is gone: it could show a stale value.
 
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| Empty statusline | `jq` not installed | Install `jq` with your OS package manager |
+| `statusline: falta jq (...)` | `jq` not installed or not on `PATH` | Install `jq` with your OS package manager and restart Claude Code |
 | `statusline skipped · restart to fix` | Workspace not trusted | Restart Claude Code and accept the trust dialog |
 | Shows `branch -` | The cwd is not a git repo | Normal outside of repos; not an error |
-| `sess` always at 0% | Not a Claude.ai Pro/Max subscriber, or it's the first turn before the first API call | `rate_limits` only appears for subscribers after the first response |
+| `sess -- (--)`, no `week` | Not a Claude.ai Pro/Max subscriber, or it's the first turn before the first API call | `rate_limits` only appears for subscribers after the first response |
+| Countdown doesn't move | Statusline only re-runs on session events | Add `"refreshInterval": 60` to the `statusLine` block |
 | Raw ANSI codes visible | Terminal isn't interpreting escape sequences | Use a modern terminal (Windows Terminal, iTerm2, etc.) |
-| `effort` always `medium` | Freshly opened session with no prior `/effort` AND `effortLevel` missing from `settings.json` | Run any `/effort <value>` in the session or add `"effortLevel": "..."` to `settings.json` |
+| `effort -` | The current model doesn't support the effort parameter (`effort` absent from stdin JSON) | Expected; switch to a model that supports effort |
 
 ## Customization
 
@@ -152,7 +155,7 @@ The `\033[38;5;N m` codes are 256-color (N = 0-255). Reference table: [256 color
 
 To change the bar width, modify `width=10` inside `build_bar()`.
 
-To change the green/yellow/red thresholds, edit the `-ge 90` / `-ge 70` checks in the "Color según umbral" section.
+To change the green/yellow/red thresholds, edit the `-ge 90` / `-ge 70` checks in `pct_color()` ("Color según umbral" section); `ctx`, `sess` and `week` all use it.
 
 ## Files in this directory
 
@@ -163,6 +166,6 @@ statusbar/
 ├── bin/
 │   └── statusline-command.sh   ← the script to copy to ~/.claude/
 └── docs/
-    ├── img.jpg                 ← preview screenshot used in this README
+    ├── img.png                 ← preview screenshot used in this README
     └── statusline.md           ← upstream statusline reference (read-only)
 ```
